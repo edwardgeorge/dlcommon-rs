@@ -3,7 +3,9 @@ use std::error::Error;
 use clap::ValueEnum;
 use reqwest::Url;
 use reqwest_cookie_store::{CookieStore, CookieStoreMutex, RawCookie};
-use rookie::{brave, chrome, edge, enums::Cookie, firefox, opera, safari};
+#[cfg(target_os = "macos")]
+use rookie::safari;
+use rookie::{brave, chrome, edge, enums::Cookie, firefox, opera};
 use strum::{Display, EnumString};
 use time::OffsetDateTime;
 
@@ -16,6 +18,7 @@ pub enum Browser {
     #[default]
     Firefox,
     Opera,
+    #[cfg(target_os = "macos")]
     Safari,
 }
 
@@ -32,6 +35,7 @@ impl Browser {
             Self::Firefox => firefox(domains)?,
             Self::Chrome => chrome(domains)?,
             Self::Opera => opera(domains)?,
+            #[cfg(target_os = "macos")]
             Self::Safari => safari(domains)?,
         })
     }
