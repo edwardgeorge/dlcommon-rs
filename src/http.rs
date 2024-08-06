@@ -252,6 +252,7 @@ where
         .client(client)
         .url(url)
         .target(target)
+        .filename_use_content_disposition(UsagePref::Require)
         .build()?
         .download(progress_cb)
         .await?;
