@@ -140,7 +140,7 @@ impl Operation {
                 item_style.clone(),
                 success_style.clone(),
                 failure_style.clone(),
-                self.wait_after_download.clone(),
+                self.wait_after_download,
             ));
             handles.push(jh);
         }
@@ -177,6 +177,11 @@ async fn create_task(
     );
     spinner.enable_steady_tick(Duration::from_millis(100));
     let mut progress: Option<ProgressBar> = None;
+    let title = file_dl
+        .title
+        .as_ref()
+        .cloned()
+        .unwrap_or_else(|| file_dl.url.clone());
     match file_dl
         .download(
             &client,
@@ -214,7 +219,7 @@ async fn create_task(
                 p.abandon();
             }
             mult.suspend(|| {
-                eprintln!("Error downloading '{}': {e}", "FOO");
+                eprintln!("Error downloading '{}': {e}", title);
             });
         }
     }
