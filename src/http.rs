@@ -1,10 +1,4 @@
-use std::{
-    borrow::Cow,
-    error::Error,
-    path::{Path, PathBuf},
-    str::from_utf8,
-    sync::Arc,
-};
+use std::{borrow::Cow, error::Error, path::PathBuf, str::from_utf8, sync::Arc};
 
 use derive_builder::Builder;
 use futures_util::StreamExt as _;

@@ -1,8 +1,4 @@
-use std::{
-    error::Error,
-    sync::{Arc, OnceLock},
-    time::Duration,
-};
+use std::{error::Error, sync::Arc, time::Duration};
 
 use derive_builder::Builder;
 use indicatif::{MultiProgress, ProgressBar, ProgressStyle};
@@ -14,6 +10,7 @@ use tokio::{
 };
 
 use crate::http::FileDownload;
+use crate::style::*;
 
 #[derive(Clone, Builder)]
 pub struct Operation {
@@ -44,55 +41,6 @@ impl OperationBuilder {
         self.concurrency = Some(Arc::new(Semaphore::new(n)));
         self
     }
-}
-
-fn main_progress_style() -> &'static ProgressStyle {
-    static MEM: OnceLock<ProgressStyle> = OnceLock::new();
-    MEM.get_or_init(|| {
-        ProgressStyle::with_template(
-            "[{elapsed_precise}] {bar:40.cyan/blue} {pos:>7}/{len:7} {msg}",
-        )
-        .unwrap()
-        .progress_chars("█▓▒░▫")
-    })
-}
-
-fn spin_progress_style() -> &'static ProgressStyle {
-    static MEM: OnceLock<ProgressStyle> = OnceLock::new();
-    MEM.get_or_init(|| ProgressStyle::default_spinner().tick_chars("⠋⠙⠹⠸⠼⠴⠦⠧⠇⠏◇"))
-}
-
-fn item_progress_style() -> &'static ProgressStyle {
-    static MEM: OnceLock<ProgressStyle> = OnceLock::new();
-    MEM.get_or_init(||
-        ProgressStyle::with_template(
-            "[{elapsed_precise}] {bar:40.cyan/blue} {decimal_bytes:>12}/{decimal_total_bytes:12} {msg}",
-        )
-        .unwrap()
-        .progress_chars("█▇▆▅▄▃▂▁  ")
-    )
-}
-
-fn item_success_style() -> &'static ProgressStyle {
-    static MEM: OnceLock<ProgressStyle> = OnceLock::new();
-    MEM.get_or_init(||
-        ProgressStyle::with_template(
-            "[{elapsed_precise:.dim}] {bar:40.green.dim/green.dim}            ↓ {decimal_total_bytes:12.dim} {msg:.dim}",
-        )
-        .unwrap()
-        .progress_chars("█▇▆▅▄▃▂▁  ")
-    )
-}
-
-fn item_failure_style() -> &'static ProgressStyle {
-    static MEM: OnceLock<ProgressStyle> = OnceLock::new();
-    MEM.get_or_init(||
-        ProgressStyle::with_template(
-            "[{elapsed_precise:.red.dim}] {bar:40.red.dim/red.dim}            ↓ {decimal_total_bytes:12.red.dim} {msg:.red.dim}",
-        )
-        .unwrap()
-        .progress_chars("█▇▆▅▄▃▂▁  ")
-    )
 }
 
 impl Operation {
