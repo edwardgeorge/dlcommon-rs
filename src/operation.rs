@@ -18,6 +18,8 @@ pub struct Operation {
     client: Arc<Client>,
     #[builder(default = "Arc::new(Semaphore::new(1))", setter(custom))]
     concurrency: Arc<Semaphore>,
+    #[builder(default, setter(into, strip_option))]
+    multiprogress: Option<Arc<MultiProgress>>,
     #[builder(default = "Duration::from_secs(1)", setter(custom))]
     wait_after_download: Duration,
     #[builder(default, setter(into, strip_option))]
@@ -41,6 +43,10 @@ impl OperationBuilder {
         self.concurrency = Some(Arc::new(Semaphore::new(n)));
         self
     }
+    pub fn with_semaphore(&mut self, sem: Arc<Semaphore>) -> &mut Self {
+        self.concurrency = Some(sem);
+        self
+    }
 }
 
 impl Operation {
@@ -49,13 +55,19 @@ impl Operation {
     }
     pub async fn run(&self, items: &[FileDownload]) -> Result<(), Box<dyn Error>> {
         let mut handles = vec![];
-        let mult = MultiProgress::new();
-        let totalprogress = mult.add(
-            ProgressBar::new(items.len() as u64).with_style(
-                self.main_progress_style
-                    .as_ref()
-                    .unwrap_or_else(|| main_progress_style())
-                    .clone(),
+        let mult = self
+            .multiprogress
+            .as_ref()
+            .cloned()
+            .unwrap_or_else(|| Arc::new(MultiProgress::new()));
+        let totalprogress = Arc::new(
+            mult.add(
+                ProgressBar::new(items.len() as u64).with_style(
+                    self.main_progress_style
+                        .as_ref()
+                        .unwrap_or_else(|| main_progress_style())
+                        .clone(),
+                ),
             ),
         );
         let spin_style = self
@@ -104,8 +116,8 @@ async fn create_task(
     ticket: OwnedSemaphorePermit,
     client: Arc<Client>,
     file_dl: FileDownload,
-    mult: MultiProgress,
-    totalprogress: ProgressBar,
+    mult: Arc<MultiProgress>,
+    totalprogress: Arc<ProgressBar>,
     spin_style: ProgressStyle,
     item_style: ProgressStyle,
     success_style: ProgressStyle,
