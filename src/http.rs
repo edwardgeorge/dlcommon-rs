@@ -1,4 +1,10 @@
-use std::{borrow::Cow, error::Error, path::Path, str::from_utf8, sync::Arc};
+use std::{
+    borrow::Cow,
+    error::Error,
+    path::{Path, PathBuf},
+    str::from_utf8,
+    sync::Arc,
+};
 
 use derive_builder::Builder;
 use futures_util::StreamExt as _;
@@ -89,10 +95,15 @@ impl UsagePref {
 }
 
 #[derive(Debug, Clone, Builder)]
-pub struct FileDownload<'a> {
-    client: &'a Client,
-    url: &'a str,
-    target: &'a Path,
+pub struct FileDownload {
+    // #[builder(setter(into))]
+    // client: Client,
+    #[builder(setter(into))]
+    pub title: Option<String>,
+    #[builder(setter(into))]
+    pub url: String,
+    #[builder(setter(into))]
+    target: PathBuf,
     #[builder(default)]
     preflight_head: bool,
     #[builder(default)]
@@ -102,11 +113,11 @@ pub struct FileDownload<'a> {
     #[builder(default)]
     filename_use_final_url: UsagePref,
     #[builder(default, setter(into))]
-    filename: Option<Cow<'a, str>>,
+    filename: Option<String>,
 }
 
-impl<'a> FileDownload<'a> {
-    pub fn builder() -> FileDownloadBuilder<'a> {
+impl FileDownload {
+    pub fn builder() -> FileDownloadBuilder {
         FileDownloadBuilder::default()
     }
     // pub fn with_preflight_head(&mut self, flag: bool) -> &mut Self {
@@ -155,17 +166,20 @@ impl<'a> FileDownload<'a> {
         }
         Ok(None)
     }
-    pub async fn download<F>(
-        &self,
-        progress_cb: Option<F>,
-    ) -> Result<(Cow<'a, Path>, Outcome), Box<dyn Error>>
+    pub async fn download<'a, F>(
+        &'a self,
+        client: &Client,
+        mut progress_cb: Option<F>,
+    ) -> Result<(PathBuf, Outcome), Box<dyn Error>>
     where
-        F: Fn(u64, u64),
+        F: FnMut(u64, u64),
     {
         let preflight = self.should_preflight();
-        let r = self
-            .client
-            .request(if preflight { Method::HEAD } else { Method::GET }, self.url)
+        let r = client
+            .request(
+                if preflight { Method::HEAD } else { Method::GET },
+                &self.url,
+            )
             .send()
             .await?
             // TODO: fallback to GET if we get a 405 Method Not Allowed?
@@ -176,8 +190,8 @@ impl<'a> FileDownload<'a> {
             .ok_or("No content-length header")?
             .to_str()?
             .parse()?;
-        let filename: Cow<'_, Path> = self.filename(&r)?.map_or_else(
-            || Cow::Borrowed(self.target),
+        let filename: Cow<'_, PathBuf> = self.filename(&r)?.map_or_else(
+            || Cow::Borrowed(&self.target),
             |f| Cow::Owned(self.target.join(f)),
         );
         let outcome = if filename.exists() {
@@ -189,7 +203,7 @@ impl<'a> FileDownload<'a> {
                 .into());
             }
             match self.overwrite {
-                OverwriteBehaviour::Never => return Ok((filename, Outcome::Existing)),
+                OverwriteBehaviour::Never => return Ok((filename.into_owned(), Outcome::Existing)),
                 OverwriteBehaviour::Fail => {
                     return Err(
                         format!("File '{}' already exists. failing!", filename.display()).into(),
@@ -204,7 +218,7 @@ impl<'a> FileDownload<'a> {
                             filename.display()
                         );
                     } else {
-                        return Ok((filename, Outcome::Existing));
+                        return Ok((filename.into_owned(), Outcome::Existing));
                     }
                 }
             }
@@ -216,26 +230,26 @@ impl<'a> FileDownload<'a> {
             Outcome::Download(len)
         };
         let r = if preflight {
-            self.client.get(self.url).send().await?.error_for_status()?
+            client.get(&self.url).send().await?.error_for_status()?
         } else {
             r
         };
-        let mut f = crate::file::AtomicFile::open(&filename).await?;
+        let mut f = crate::file::AtomicFile::open(&filename.as_ref()).await?;
         let mut bytestream = r.bytes_stream();
         let mut bytes = 0;
-        if let Some(f) = progress_cb.as_ref() {
+        if let Some(f) = progress_cb.as_mut() {
             f(len, 0);
         }
         while let Some(v) = bytestream.next().await {
             let b = v?;
             bytes += b.len();
             f.write_all(&b).await?;
-            if let Some(f) = progress_cb.as_ref() {
+            if let Some(f) = progress_cb.as_mut() {
                 f(len, bytes as u64);
             }
         }
         f.commit().await?;
-        Ok((filename, outcome))
+        Ok((filename.into_owned(), outcome))
     }
 }
 
@@ -249,12 +263,11 @@ where
     F: Fn(u64, u64),
 {
     let (a, b) = FileDownloadBuilder::default()
-        .client(client)
-        .url(url)
-        .target(target)
+        .url(url.to_string())
+        .target(target.to_owned())
         .filename_use_content_disposition(UsagePref::Require)
         .build()?
-        .download(progress_cb)
+        .download(client, progress_cb)
         .await?;
     Ok((a.display().to_string(), b))
 }

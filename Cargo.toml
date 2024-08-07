@@ -7,13 +7,24 @@ edition = "2021"
 clap = { version = "4.5.13", features = ["derive"] }
 derive_builder = "0.20.0"
 futures-util = "0.3.30"
+indicatif = "0.17.8"
 log = "0.4.22"
 mailparse = "0.15.0"
 percent-encoding = "2.3.1"
 rand = "0.8.5"
-reqwest = { version = "0.12.5", features = ["json", "cookies", "gzip", "stream"] }
+reqwest = { version = "0.12.5", features = [
+    "json",
+    "cookies",
+    "gzip",
+    "stream",
+] }
 reqwest_cookie_store = "0.8.0"
 rookie = "0.5.2"
 strum = { version = "0.26.3", features = ["derive"] }
 time = "0.3.36"
 tokio = "1.39.2"
+
+[dev-dependencies]
+file-serve = "0.3.4"
+tempfile = "3.12.0"
+tokio = { version = "1.39.2", features = ["rt", "rt-multi-thread"] }
