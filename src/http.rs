@@ -252,22 +252,3 @@ impl FileDownload {
         Ok((filename.into_owned(), outcome))
     }
 }
-
-pub async fn download_file<F>(
-    client: &Client,
-    url: &str,
-    target: &Path,
-    progress_cb: Option<F>,
-) -> Result<(String, Outcome), Box<dyn Error>>
-where
-    F: Fn(u64, u64),
-{
-    let (a, b) = FileDownloadBuilder::default()
-        .url(url.to_string())
-        .target(target.to_owned())
-        .filename_use_content_disposition(UsagePref::Require)
-        .build()?
-        .download(client, progress_cb)
-        .await?;
-    Ok((a.display().to_string(), b))
-}
