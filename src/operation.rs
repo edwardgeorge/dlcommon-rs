@@ -15,7 +15,7 @@ use crate::style::*;
 #[derive(Clone, Builder)]
 pub struct Operation {
     #[builder(setter(into))]
-    client: Client,
+    client: Arc<Client>,
     #[builder(default = "Arc::new(Semaphore::new(1))", setter(custom))]
     concurrency: Arc<Semaphore>,
     #[builder(default = "Duration::from_secs(1)", setter(custom))]
@@ -102,7 +102,7 @@ impl Operation {
 
 async fn create_task(
     ticket: OwnedSemaphorePermit,
-    client: Client,
+    client: Arc<Client>,
     file_dl: FileDownload,
     mult: MultiProgress,
     totalprogress: ProgressBar,
