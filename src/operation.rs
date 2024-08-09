@@ -93,7 +93,7 @@ impl Operation {
         {
             let handle_clone = handles.clone();
             source
-                .inner(|file_dl| async {
+                .apply_to_downloads(|file_dl| async {
                     let ticket = self.concurrency.clone().acquire_owned().await?;
                     let jh = spawn(create_task(
                         ticket,
@@ -124,7 +124,7 @@ impl Operation {
 
 pub trait Source {
     fn num_downloads(&self) -> u64;
-    async fn inner<F, R>(self, f: F) -> Result<(), Box<dyn Error>>
+    fn apply_to_downloads<F, R>(self, f: F) -> impl Future<Output = Result<(), Box<dyn Error>>>
     where
         F: Fn(FileDownload) -> R,
         R: Future<Output = Result<(), Box<dyn Error>>>;
@@ -134,15 +134,17 @@ impl Source for &[FileDownload] {
     fn num_downloads(&self) -> u64 {
         self.len() as u64
     }
-    async fn inner<F, R>(self, mut f: F) -> Result<(), Box<dyn Error>>
+    fn apply_to_downloads<F, R>(self, f: F) -> impl Future<Output = Result<(), Box<dyn Error>>>
     where
         F: Fn(FileDownload) -> R,
         R: Future<Output = Result<(), Box<dyn Error>>>,
     {
-        for i in self {
-            f(i.clone()).await?;
+        async move {
+            for i in self {
+                f(i.clone()).await?;
+            }
+            Ok(())
         }
-        Ok(())
     }
 }
 
