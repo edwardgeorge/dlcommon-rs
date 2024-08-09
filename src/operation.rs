@@ -1,4 +1,4 @@
-use std::{error::Error, sync::Arc, time::Duration};
+use std::{cell::RefCell, error::Error, future::Future, sync::Arc, time::Duration};
 
 use derive_builder::Builder;
 use indicatif::{MultiProgress, ProgressBar, ProgressStyle};
@@ -53,8 +53,11 @@ impl Operation {
     pub fn builder() -> OperationBuilder {
         OperationBuilder::default()
     }
-    pub async fn run(&self, items: &[FileDownload]) -> Result<(), Box<dyn Error>> {
-        let mut handles = vec![];
+    pub async fn run<S>(self, source: S) -> Result<(), Box<dyn Error>>
+    where
+        S: Source,
+    {
+        let handles = Arc::new(RefCell::new(vec![]));
         let mult = self
             .multiprogress
             .as_ref()
@@ -62,7 +65,7 @@ impl Operation {
             .unwrap_or_else(|| Arc::new(MultiProgress::new()));
         let totalprogress = Arc::new(
             mult.add(
-                ProgressBar::new(items.len() as u64).with_style(
+                ProgressBar::new(source.num_downloads()).with_style(
                     self.main_progress_style
                         .as_ref()
                         .unwrap_or_else(|| main_progress_style())
@@ -87,27 +90,58 @@ impl Operation {
             .as_ref()
             .unwrap_or_else(|| item_failure_style());
 
-        for file_dl in items {
-            // obtain semaphore
-            let ticket = self.concurrency.clone().acquire_owned().await?;
-            let jh = spawn(create_task(
-                ticket,
-                self.client.clone(),
-                file_dl.clone(),
-                mult.clone(),
-                totalprogress.clone(),
-                spin_style.clone(),
-                item_style.clone(),
-                success_style.clone(),
-                failure_style.clone(),
-                self.wait_after_download,
-            ));
-            handles.push(jh);
+        {
+            let handle_clone = handles.clone();
+            source
+                .inner(|file_dl| async {
+                    let ticket = self.concurrency.clone().acquire_owned().await?;
+                    let jh = spawn(create_task(
+                        ticket,
+                        self.client.clone(),
+                        file_dl,
+                        mult.clone(),
+                        totalprogress.clone(),
+                        spin_style.clone(),
+                        item_style.clone(),
+                        success_style.clone(),
+                        failure_style.clone(),
+                        self.wait_after_download,
+                    ));
+                    handle_clone.borrow_mut().push(jh);
+                    Ok(())
+                })
+                .await?;
         }
-        for h in handles {
-            h.await?;
+        for h in Arc::into_inner(handles).unwrap().take().into_iter() {
+            if let Err(e) = h.await {
+                mult.suspend(|| eprintln!("Error awaiting task: {e}"));
+            }
         }
         totalprogress.finish();
+        Ok(())
+    }
+}
+
+pub trait Source {
+    fn num_downloads(&self) -> u64;
+    async fn inner<F, R>(self, f: F) -> Result<(), Box<dyn Error>>
+    where
+        F: Fn(FileDownload) -> R,
+        R: Future<Output = Result<(), Box<dyn Error>>>;
+}
+
+impl Source for &[FileDownload] {
+    fn num_downloads(&self) -> u64 {
+        self.len() as u64
+    }
+    async fn inner<F, R>(self, mut f: F) -> Result<(), Box<dyn Error>>
+    where
+        F: Fn(FileDownload) -> R,
+        R: Future<Output = Result<(), Box<dyn Error>>>,
+    {
+        for i in self {
+            f(i.clone()).await?;
+        }
         Ok(())
     }
 }
@@ -174,13 +208,13 @@ async fn create_task(
             }
         }
         Err(e) => {
-            if let Some(p) = progress {
-                p.set_style(failure_style);
-                p.abandon();
-            }
             mult.suspend(|| {
                 eprintln!("Error downloading '{}': {e}", title);
             });
+            if let Some(p) = progress {
+                p.set_style(failure_style);
+                p.finish();
+            }
         }
     }
     totalprogress.inc(1);

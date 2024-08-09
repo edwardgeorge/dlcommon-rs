@@ -177,11 +177,27 @@ impl FileDownload {
             .send()
             .await?
             // TODO: fallback to GET if we get a 405 Method Not Allowed?
-            .error_for_status()?;
+            .error_for_status()
+            .map_err(|e| {
+                format!(
+                    "Error in {}HTTP request: {e}",
+                    if preflight { "preflight " } else { "" },
+                )
+            })?;
         let len: u64 = r
             .headers()
             .get("Content-length")
-            .ok_or("No content-length header")?
+            //.ok_or("No content-length header")?
+            .ok_or_else(|| {
+                format!(
+                    "No content-length header. headers: {:?}",
+                    r.headers()
+                        .keys()
+                        .map(|e| e.to_string())
+                        .collect::<Vec<_>>()
+                        .join(", ")
+                )
+            })?
             .to_str()?
             .parse()?;
         let filename: Cow<'_, PathBuf> = self.filename(&r)?.map_or_else(
@@ -228,21 +244,27 @@ impl FileDownload {
         } else {
             r
         };
-        let mut f = crate::file::AtomicFile::open(&filename.as_ref()).await?;
+        let mut f = crate::file::AtomicFile::open(&filename.as_ref())
+            .await
+            .map_err(|e| format!("Could not open tempfile for writing: {e}"))?;
         let mut bytestream = r.bytes_stream();
         let mut bytes = 0;
         if let Some(f) = progress_cb.as_mut() {
             f(len, 0);
         }
         while let Some(v) = bytestream.next().await {
-            let b = v?;
+            let b = v.map_err(|e| format!("Error streaming bytes from HTTP response: {e}"))?;
             bytes += b.len();
-            f.write_all(&b).await?;
+            f.write_all(&b)
+                .await
+                .map_err(|e| format!("Error writing bytes to tempfile: {e}"))?;
             if let Some(f) = progress_cb.as_mut() {
                 f(len, bytes as u64);
             }
         }
-        f.commit().await?;
+        f.commit()
+            .await
+            .map_err(|e| format!("Error committing written file: {e}"))?;
         Ok((filename.into_owned(), outcome))
     }
 }
