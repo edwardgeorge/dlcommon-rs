@@ -41,12 +41,12 @@ impl Browser {
     }
 }
 
-pub fn get_cookies(browser: Browser) -> Result<CookieStoreMutex, Box<dyn Error>> {
+pub fn get_cookies(
+    browser: Browser,
+    domains: Option<Vec<String>>,
+) -> Result<CookieStoreMutex, Box<dyn Error>> {
     let mut cs = CookieStore::new(None);
-    for c in browser.get_cookies(Some(vec![
-        "bandcamp.com".to_string(),
-        ".bandcamp.com".to_string(),
-    ]))? {
+    for c in browser.get_cookies(domains)? {
         cs.insert_raw(
             &RawCookie::build((&c.name, &c.value))
                 .domain(&c.domain)
