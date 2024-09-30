@@ -405,7 +405,7 @@ checksum = "d7ebdfa2ebdab6b1760375fa7d6f382b9f486eac35fc994625a00e89280bdbb7"
 dependencies = [
  "async-task",
  "concurrent-queue",
- "fastrand 2.1.0",
+ "fastrand 2.1.1",
  "futures-lite 2.3.0",
  "slab",
 ]
@@ -455,7 +455,7 @@ dependencies = [
  "futures-lite 2.3.0",
  "parking",
  "polling 3.7.2",
- "rustix 0.38.34",
+ "rustix 0.38.37",
  "slab",
  "tracing",
  "windows-sys 0.52.0",
@@ -494,7 +494,7 @@ dependencies = [
  "cfg-if",
  "event-listener 3.1.0",
  "futures-lite 1.13.0",
- "rustix 0.38.34",
+ "rustix 0.38.37",
  "windows-sys 0.48.0",
 ]
 
@@ -521,7 +521,7 @@ dependencies = [
  "cfg-if",
  "futures-core",
  "futures-io",
- "rustix 0.38.34",
+ "rustix 0.38.37",
  "signal-hook-registry",
  "slab",
  "windows-sys 0.52.0",
@@ -1240,9 +1240,9 @@ dependencies = [
 
 [[package]]
 name = "fastrand"
-version = "2.1.0"
+version = "2.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9fc0510504f03c51ada170672ac806f1f105a88aa97a5281117e1ddc3368e51a"
+checksum = "e8c02a5121d4ea3eb16a80748c74f5549a5665e4c21333c6098f283870fbdea6"
 
 [[package]]
 name = "flate2"
@@ -1326,7 +1326,7 @@ version = "2.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "52527eb5074e35e9339c6b4e8d12600c7128b68fb25dcb9fa9dec18f7c25f3a5"
 dependencies = [
- "fastrand 2.1.0",
+ "fastrand 2.1.1",
  "futures-core",
  "futures-io",
  "parking",
@@ -1803,9 +1803,9 @@ checksum = "bbd2bcb4c963f2ddae06a2efc7e9f3591312473c50c6685e1f298068316e66fe"
 
 [[package]]
 name = "libc"
-version = "0.2.155"
+version = "0.2.159"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "97b3888a4aecf77e811145cadf6eef5901f4782c53886191b2f693f24761847c"
+checksum = "561d97a539a36e26a9a5fad1ea11a3039a67714694aaa379433e580854bc3dc5"
 
 [[package]]
 name = "libesedb"
@@ -2219,7 +2219,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ae1d5c74c9876f070d3e8fd503d748c7d974c3e48da8f41350fa5222ef9b4391"
 dependencies = [
  "atomic-waker",
- "fastrand 2.1.0",
+ "fastrand 2.1.1",
  "futures-io",
 ]
 
@@ -2255,7 +2255,7 @@ dependencies = [
  "concurrent-queue",
  "hermit-abi 0.4.0",
  "pin-project-lite",
- "rustix 0.38.34",
+ "rustix 0.38.37",
  "tracing",
  "windows-sys 0.52.0",
 ]
@@ -2605,9 +2605,9 @@ dependencies = [
 
 [[package]]
 name = "rustix"
-version = "0.38.34"
+version = "0.38.37"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "70dc5ec042f7a43c4a73241207cecc9873a06d45debb38b329f8541d85c2730f"
+checksum = "8acb788b847c24f28525660c4d7758620a7210875711f79e7f663cc152726811"
 dependencies = [
  "bitflags 2.6.0",
  "errno",
@@ -2944,14 +2944,14 @@ dependencies = [
 
 [[package]]
 name = "tempfile"
-version = "3.12.0"
+version = "3.13.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "04cbcdd0c794ebb0d4cf35e88edd2f7d2c4c3e9a5a6dab322839b321c6a87a64"
+checksum = "f0f2c9fc62d0beef6951ccffd757e241266a2c833136efbe35af6cd2567dca5b"
 dependencies = [
  "cfg-if",
- "fastrand 2.1.0",
+ "fastrand 2.1.1",
  "once_cell",
- "rustix 0.38.34",
+ "rustix 0.38.37",
  "windows-sys 0.59.0",
 ]
 
@@ -3404,7 +3404,7 @@ dependencies = [
  "either",
  "home",
  "once_cell",
- "rustix 0.38.34",
+ "rustix 0.38.37",
 ]
 
 [[package]]
