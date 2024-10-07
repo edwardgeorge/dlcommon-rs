@@ -6,7 +6,7 @@ edition = "2021"
 [dependencies]
 clap = { version = "4.5.16", features = ["derive"] }
 derive_builder = "0.20.1"
-futures-util = "0.3.30"
+futures-util = "0.3.31"
 indicatif = "0.17.8"
 log = "0.4.22"
 mailparse = "0.15.0"
