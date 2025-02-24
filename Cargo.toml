@@ -9,7 +9,7 @@ derive_builder = "0.20.2"
 futures-util = "0.3.31"
 indicatif = "0.17.8"
 log = "0.4.22"
-mailparse = "0.15.0"
+mailparse = "0.16.0"
 percent-encoding = "2.3.1"
 rand = "0.8.5"
 reqwest = { version = "0.12.9", features = [
